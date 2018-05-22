@@ -1,0 +1,23 @@
+---
+- hosts: all 
+  vars_files:
+    
+  
+  tasks:
+
+    # Register with user name and password provided in vars.yml, if not already registered
+    - name: Check if already registerd
+      command: /usr/bin/subscription-manager version
+      register: subscribed
+
+    - debug:
+        var: subscribed.stdout
+
+    - name: subscription manager tasks
+      redhat_subscription:
+        state: present
+        username: "{{ rh_username }}"
+        password: "{{ rh_password }}"
+      when: "'not registered' in subscribed.stdout"
+
+  
