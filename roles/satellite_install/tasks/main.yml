@@ -1,0 +1,143 @@
+---
+- hosts: all 
+  vars_files:
+    - ../vars/vars.yml
+  
+  tasks:
+
+    # Register with user name and password provided in vars.yml, if not already registered
+    - name: Check if already registerd
+      command: /usr/bin/subscription-manager version
+      register: subscribed
+
+    - debug:
+        var: subscribed.stdout
+
+    - name: subscription manager tasks
+      redhat_subscription:
+        state: present
+        username: "{{ rh_username }}"
+        password: "{{ rh_password }}"
+      when: "'not registered' in subscribed.stdout"
+
+    # Get pool ID and attahch, if no pool pool id returned fail
+    - name: Obtain pool id
+      shell: /usr/bin/subscription-manager list --available --matches "Red Hat Satellite" | grep 'Pool ID' | awk 'FNR == 1 {print$3}'
+      register: rh_poolid
+
+    - name: Consumed pool id
+      shell: /usr/bin/subscription-manager list --consumed
+      register: consumed_poolid
+
+    - debug:
+        var: rh_poolid.stdout
+
+    - name: Fail if no pool id is found 
+      fail:
+        msg: No subscription matching found 
+      when: rh_poolid.stdout == ""
+
+    - name: attach to pool 
+      command: subscription-manager attach --pool="{{ rh_poolid.stdout }}"
+      when: consumed_poolid.stdout == "No consumed subscription pools were found."
+      # register: register_result
+
+
+    # Disalbe all repos and enalbe the the pkgs listed below
+    - name: Disable all repos
+      rhsm_repository:
+        name: '*'
+        state: disabled
+      register: disable_repos
+
+    - name: Enable rhel-7-server-rpms, rhel-server-rhscl-7-rpms, and rhel-7-server-satellite-6.3-rpms repos
+      rhsm_repository:
+        name: "{{ item }}"
+        state: enabled
+      with_items:
+        - rhel-7-server-rpms
+        - rhel-server-rhscl-7-rpms
+        - rhel-7-server-satellite-6.3-rpms
+
+    # Yum clean all and install satellite installer
+    - name: Perform a yum clean
+      command: /usr/bin/yum clean all
+
+    - name: upgrade all packages
+      yum:
+        name: '*'
+        state: latest
+
+    # - name: install satellite installer
+    #   yum:
+    #     name: satellite
+    #     state: latest
+    #   when: 
+
+      
+    #Remove ntp, install chrony
+    - name: remove ntp
+      yum:
+        name: "ntp,ntpdate"
+        state: absent
+
+    - name: install chrony
+      yum:
+        name: "chrony"
+        state: present
+
+    - name: start chrony
+      systemd:
+        name: chronyd
+        state: started
+        enabled: yes
+
+
+    # - name: Copy satellite answers file to target
+    #   copy:
+    #     src: ../templates/satellite-answers.yaml
+    #     dest: /etc/foreman-installer/scenarios.d/satellite-answers.yaml
+        
+    # use replace module to replace location and organization, from vars.yml
+    - name: replace location
+      replace:
+        path: /etc/foreman-installer/scenarios.d/satellite-answers.yaml
+        regexp: 'Default Organization'
+        replace: "{{ organization }}"
+        backup: yes
+    
+    - name: replace org
+      replace:
+        path: /etc/foreman-installer/scenarios.d/satellite-answers.yaml
+        regexp: 'Default Location'
+        replace: "{{ location }}"
+        backup: yes 
+
+
+    # Install Satellite 
+    - name: Install satellite
+      command: /usr/sbin/satellite-installer --scenario "{{ satellite_scenario }}" --foreman-admin-username "{{ foreman_username }}" --foreman-admin-password "{{ foreman_password }}"
+       
+    - name: Ensure firewalld is stopped
+      systemd: name=firewalld state=stopped
+
+    - name: Ensure firewalld is disabled
+      systemd: name=firewalld enabled=no
+    
+
+    - name: Copy manifest to the Satellite Server
+      copy:
+        src: /home/mthavarajah/Downloads/manifest_mohan-satellite_20180419T232532Z.zip
+        dest: ~/.
+
+    - name: Upload manifest
+      command: hammer subscription upload --file ~/manifest_mohan-satellite_20180419T232532Z.zip --organization "{{ organization }}"
+
+
+
+
+###
+# To do:
+# content view
+# hos
+###
