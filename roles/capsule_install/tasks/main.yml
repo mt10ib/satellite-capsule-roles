@@ -1,23 +1,119 @@
 ---
-- hosts: all 
-  vars_files:
+  
+  # Register with user name and password provided in vars.yml, if not already registered
+  - name: Check if already registerd
+    command: /usr/bin/subscription-manager version
+    register: subscribed
+
+
+  - name: Install the Satellite Server’s CA certificate in the Capsule Server
+    yum: name=http://mohan-satellite.cdcug.local/pub/katello-ca-consumer-latest.noarch.rpm
+  
+
+  # Get pool ID and attahch, if no pool pool id returned fail
+  - name: Register with activation key
+    shell: /usr/bin/subscription-manager register --org="Arctiq" --activationkey="act-infra-capusle" --force
+    when: "'not registered' in subscribed.stdout"
+
     
+ # Disalbe all repos and enalbe the the pkgs listed below
+  - name: Disable all repos
+    rhsm_repository:
+      name: '*'
+      state: disabled
+    register: disable_repos
+
+
+  - name: Enable necessary repos
+    rhsm_repository:
+      name: "{{ item }}"
+      state: enabled
+    with_items:
+      - rhel-7-server-rpms
+      - rhel-server-rhscl-7-rpms
+      - rhel-7-server-satellite-tools-6.3-rpms
+      - rhel-7-server-satellite-capsule-6.3-rpms
+
+
+  # Yum clean all and upgrade
+  - name: Perform a yum clean
+    command: /usr/bin/yum clean all
+
+  - name: upgrade all packages
+    yum:
+      name: '*'
+      state: latest
+
+  #Remove ntp, install chrony
+  - name: remove ntp
+    yum:
+      name: "ntp,ntpdate"
+      state: absent
+
+  - name: install chrony
+    yum:
+      name: "chrony"
+      state: present
+
+  - name: start chrony
+    systemd:
+      name: chronyd
+      state: started
+      enabled: yes
+
+
+  - name: Install the installation package.
+    yum:
+      name: satellite-capsule
+      state: latest
+
+
+  - name: Generate certs
+    command: capsule-certs-generate --foreman-proxy-fqdn mohan-capsule.cdcug.local  --certs-tar /root/mohan-capsule.cdcug.local-certs.tar 
+    delegate_to: mohan-satellite.cdcug.local
+
+
+  - name: Copy generated tar file
+    synchronize: 
+      src: /root/mohan-capsule.cdcug.local-certs.tar
+      dest: /root/mohan-capsule.cdcug.local-certs.tar
+    delegate_to: "{{ satellite_server }}"
+
+
+  - name: get oauth-consumer-key
+    shell: grep "oauth_consumer_key" /etc/foreman/settings.yaml | sed 's/^.*:\ //'
+    register: consumerkey
+    delegate_to: "{{ satellite_server }}"
+
+  - name: get oauth_consumer_secret
+    shell: grep "oauth_consumer_secret" /etc/foreman/settings.yaml | sed 's/^.*:\ //'
+    register: consumersecret
+    delegate_to: "{{ satellite_server }}"
+
+  - name: get content-pulp-oauth-secret 
+    shell: grep "^[^#;]" /etc/pulp/server.conf | grep "oauth_secret" | sed 's/^.*:\ //'
+    register: oauthsecret 
+    delegate_to: "{{ satellite_server }}"
+
+  - debug:
+      var: consumerkey.stdout
+  - debug:
+      var: consumersecret.stdout
+  - debug:    
+      var: oauthsecret.stdout
+
+
+  - name: run satellite-installer
+    shell: satellite-installer --scenario capsule --foreman-proxy-content-parent-fqdn "{{ satellite_server }}" --foreman-proxy-register-in-foreman "true"  --foreman-proxy-foreman-base-url "https://{{ satellite_server }}" --foreman-proxy-trusted-hosts "{{ cap_name }}" --foreman-proxy-trusted-hosts "{{ satellite_server }}" --foreman-proxy-oauth-consumer-key "{{ consumerkey.stdout }}" --foreman-proxy-oauth-consumer-secret "{{ consumersecret.stdout }}" --foreman-proxy-content-pulp-oauth-secret "{{ oauthsecret.stdout }}" --foreman-proxy-content-certs-tar "/root/{{ capsule_server }}-certs.tar" --puppet-server-foreman-url "https://{{ satellite_server }}"
+
   
-  tasks:
+  - name: run katello-agent
+    yum:
+      name: "katello-agent"
+      state: present
 
-    # Register with user name and password provided in vars.yml, if not already registered
-    - name: Check if already registerd
-      command: /usr/bin/subscription-manager version
-      register: subscribed
+  - name: Enabling Remote Execution on Capsule Server
+    command: satellite-installer --scenario capsule --enable-foreman-proxy-plugin-remote-execution-ssh
 
-    - debug:
-        var: subscribed.stdout
 
-    - name: subscription manager tasks
-      redhat_subscription:
-        state: present
-        username: "{{ rh_username }}"
-        password: "{{ rh_password }}"
-      when: "'not registered' in subscribed.stdout"
 
-  
