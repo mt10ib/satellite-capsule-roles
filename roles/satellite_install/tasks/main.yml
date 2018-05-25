@@ -106,7 +106,9 @@
 
   # Install Satellite 
   - name: Install satellite
-    command: /usr/sbin/satellite-installer --scenario "{{ satellite_scenario }}" --foreman-admin-username "{{ foreman_username }}" --foreman-admin-password "{{ foreman_password }}"
+    command: /usr/sbin/satellite-installer --scenario "{{ satellite_scenario }}"\
+                                           --foreman-admin-username "{{ foreman_username }}"\
+                                           --foreman-admin-password "{{ foreman_password }}"
       
   - name: Ensure firewalld is stopped
     systemd: name=firewalld state=stopped

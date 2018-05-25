@@ -1,4 +1,10 @@
-#10.110.111.178
-#mohan-satellite.cdcug.local
-#10.110.111.181
-mohan-capsule.cdcug.local
+[satellite]
+mohan-satellite.cdcug.local ansible_ssh_host=10.110.111.178
+
+[hosts]
+mohan-capsule.cdcug.local ansible_ssh_host=10.110.111.181
+
+[clients]
+#root@mohan-client-4.cdcug.local ansible_ssh_host=10.110.111.185
+#root@mohan-client-5.cdcug.local ansible_ssh_host=10.110.111.154
+#root@mohan-client-6.cdcug.local ansible_ssh_host=10.110.111.155
