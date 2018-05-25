@@ -1,12 +1,8 @@
 # satellite-capsule-roles
 
-### 
-```
-Install Satellite and Capsule servers
+### Install Satellite and Capsule servers
 
-
-```
-######run.yaml:
+###### run.yaml:
 ```
  ---
 - hosts: all
@@ -23,7 +19,7 @@ Install Satellite and Capsule servers
         name: capsule_install
 ```
 
-######Run the playbook:
+###### Run the playbook:
 ```
  ansible-playbook  -i inventory run.yaml 
 ```
