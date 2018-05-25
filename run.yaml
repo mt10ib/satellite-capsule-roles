@@ -2,7 +2,7 @@
 - hosts: all
     
   vars_files:
-    - ../satellite-capsule-roles/roles/capsule_install/vars/vars1.yml
+    - ../satellite-capsule-roles/roles/capsule_install/vars/vars.yml
     - ../satellite-capsule-roles/roles/satellite_install/vars/vars1.yml
 
 
