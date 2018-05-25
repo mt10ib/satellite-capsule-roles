@@ -12,7 +12,9 @@
 
   # Get pool ID and attahch, if no pool pool id returned fail
   - name: Register with activation key
-    shell: /usr/bin/subscription-manager register --org="Arctiq" --activationkey="act-infra-capusle" --force
+    shell: /usr/bin/subscription-manager register --org="Arctiq"\
+                                                  --activationkey="act-infra-capusle"\
+                                                  --force
     when: "'not registered' in subscribed.stdout"
 
     
@@ -69,7 +71,8 @@
 
 
   - name: Generate certs
-    command: capsule-certs-generate --foreman-proxy-fqdn mohan-capsule.cdcug.local  --certs-tar /root/mohan-capsule.cdcug.local-certs.tar 
+    command: capsule-certs-generate --foreman-proxy-fqdn mohan-capsule.cdcug.local\
+                                    --certs-tar /root/mohan-capsule.cdcug.local-certs.tar 
     delegate_to: mohan-satellite.cdcug.local
 
 
@@ -117,7 +120,8 @@
       state: present
 
   - name: Enabling Remote Execution on Capsule Server
-    command: satellite-installer --scenario capsule --enable-foreman-proxy-plugin-remote-execution-ssh
+    command: satellite-installer --scenario capsule\
+                                 --enable-foreman-proxy-plugin-remote-execution-ssh
 
 
 

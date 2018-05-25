@@ -123,6 +123,7 @@
       dest: ~/.
 
   - name: Upload manifest
-    command: hammer subscription upload --file ~/manifest_mohan-satellite_20180419T232532Z.zip --organization "{{ organization }}"
+    command: hammer subscription upload --file ~/manifest_mohan-satellite_20180419T232532Z.zip\
+                                        --organization "{{ organization }}"
 
 
