@@ -1,7 +1,7 @@
 [satellite]
 mohan-satellite.cdcug.local ansible_ssh_host=10.110.111.178
 
-[hosts]
+[capsule]
 mohan-capsule.cdcug.local ansible_ssh_host=10.110.111.181
 
 [clients]
