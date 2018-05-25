@@ -1,0 +1,7 @@
+rh_username: <username>
+rh_password: <passowrd>
+satellite_scenario: satellite
+foreman_username: admin
+foreman_password: admin
+location: Toronto
+organization: Arctiq
