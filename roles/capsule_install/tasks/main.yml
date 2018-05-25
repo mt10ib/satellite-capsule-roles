@@ -46,7 +46,7 @@
       name: '*'
       state: latest
 
-  #Remove ntp, install chrony
+  # Remove ntp, install chrony
   - name: remove ntp
     yum:
       name: "ntp,ntpdate"
@@ -75,14 +75,15 @@
                                     --certs-tar /root/mohan-capsule.cdcug.local-certs.tar 
     delegate_to: mohan-satellite.cdcug.local
 
-
+    ######   Copy satellite's ssh key to capsule, otherwise it will hangs ######
+  
   - name: Copy generated tar file
     synchronize: 
       src: /root/mohan-capsule.cdcug.local-certs.tar
       dest: /root/mohan-capsule.cdcug.local-certs.tar
     delegate_to: "{{ satellite_server }}"
-
-
+    
+    # get oauth_consumer_key, oauth_consumer_secret, oauth_secret from satellite server  
   - name: get oauth-consumer-key
     shell: grep "oauth_consumer_key" /etc/foreman/settings.yaml | sed 's/^.*:\ //'
     register: consumerkey
@@ -97,7 +98,6 @@
     shell: grep "^[^#;]" /etc/pulp/server.conf | grep "oauth_secret" | sed 's/^.*:\ //'
     register: oauthsecret 
     delegate_to: "{{ satellite_server }}"
-
 
 
   - name: run satellite-installer

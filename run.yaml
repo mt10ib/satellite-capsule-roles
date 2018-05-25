@@ -1,10 +1,17 @@
 ---
-- hosts: satellite
-  tasks:
-    - import_role:
-        name: satellite_install
+# - hosts: satellite
+#   tasks:
+#     - import_role:
+#         name: satellite_install
+    
+# - hosts: capsule
+#   tasks:
+#     - import_role:
+#         name: capsule_install
+
     
 - hosts: capsule
+  gather_facts: no
   tasks:
     - import_role:
-        name: capsule_install
+        name: ssh_setup
